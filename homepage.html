@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Homepage</title>
+    <!-- jQuery prima degli script di Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Link per Bootstrap CSS e JavaScript -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- JavaScript per caricare i dettagli dell'engagement -->
+    <script>
+        function showEngagementDetails(button)
+            {
+                var engagementName = button.innerText;
+                var url = button.dataset.url;
+
+                // Richiesta AJAX per i dettagli dell'engagement dal server
+                $.ajax
+                    (
+                        {
+                            type: "GET",
+                            url: url,
+                            data: { engagement_name: engagementName },
+                            success: function (data)
+                                {
+                                    var detailsHtml = "<p>Engagement Name: " + data.engagement_name + "</p>";
+                                    detailsHtml += "<p>Budget: " + data.budget + "</p>";
+                                    detailsHtml += "<p>Owner: " + data.owner + "</p>";
+                                    detailsHtml += "<p>Client: " + data.client + "</p>";
+                                    detailsHtml += "<p>Starting Date: " + data.starting_date + "</p>";
+                                    detailsHtml += "<p>Due Date: " + data.due_date + "</p>";
+                                    detailsHtml += "<p>Note: " + data.note + "</p>";
+
+                                    // Aggiorna il contenuto della sezione con id "engagementDetailsBody" con i dettagli dell'engagement
+                                    $("#engagementDetailsBody").html(detailsHtml);
+                                },
+                            error: function ()
+                                {
+                                    alert("Si è verificato un errore durante il recupero dei dettagli dell'engagement.");
+                                }
+                        }
+                    );
+            }
+
+        function showResourceDetails(button)
+            {
+                var resourceId = button.dataset.resourceId;
+                var url = "{% url 'resource_details' 0 %}".replace('0', resourceId);
+            
+                // Richiesta AJAX per i dettagli del resource dal server
+                $.ajax({
+                    type: "GET",
+                    url: url,
+                    data: { resource_id: resourceId },
+                    success: function(data) {
+                        var detailsHtml = "<p>Resource Name: " + data.name + "</p>";
+                        detailsHtml += "<p>Surname: " + data.surname + "</p>";
+                        detailsHtml += "<p>Resource Level: " + data.resourceLevel + "</p>";
+                        detailsHtml += "<p>Note: " + data.note + "</p>";
+            
+                        // Aggiorna il contenuto della sezione con id "resourceDetailsBody" con i dettagli del resource
+                        $("#resourceDetailsBody").html(detailsHtml);
+                    },
+                    error: function() {
+                        alert("Si è verificato un errore durante il recupero dei dettagli del resource.");
+                    }
+                });
+            }
+        
+        function openEditEngagementPopup()
+            {
+                // Apri il riquadro popup per la modifica dell'engagement
+                $('#editEngagementModal').modal('show');
+            }
+    
+        function deleteEngagement()
+            {
+                // Codice per eliminare l'engagement
+                // Qui dovresti fare una richiesta AJAX al server per eliminare l'engagement dal database
+                // Dopo l'eliminazione, puoi reindirizzare l'utente alla pagina iniziale o fare altre azioni necessarie
+            }
+    </script>
+</head>
+<body>
+    <h1>Benvenuto nella homepage di planning!</h1>
+    <!-- Bottoni per aprire i modali -->
+    <!--<div class="d-flex justify-content-between align-items-center mb-4">
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#newEngagementModal">
+            New Engagement
+        </button>
+        <button type="button" class="btn btn-success" id="newResourceBtn" data-toggle="modal" data-target="#newResourceModal">
+            New Resource
+        </button>
+    </div>-->
+
+
+    <div class="mt-4 row align-items-start">
+        <div class="col">
+            <h2>Gli Engagement salvati:</h2>
+            <button type="button" class="btn btn-primary mb-3" data-toggle="modal" data-target="#newEngagementModal">
+                New Engagement
+            </button>
+            {% for engagement in engagements %}
+                <div class="mb-2 mt-3">
+                    <!-- Utilizza data-url per memorizzare l'URL della vista "engagement_details" -->
+                    <button type="button" class="btn btn-secondary" data-url="{% url 'engagement_details' %}" onclick="showEngagementDetails(this)">
+                        {{ engagement.engagement_name }}
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="col align-items-center">
+            <h2 class="mb-3">I Resources salvati:</h2>
+            <button type="button" class="btn btn-success mb-3" id="newResourceBtn" data-toggle="modal" data-target="#newResourceModal">
+                New Resource
+            </button>
+            {% for resource in resources %}
+                <div class="mb-2 mt-3">
+                    <!-- Utilizza data-resource-id per memorizzare l'ID del Resource -->
+                    <button type="button" class="btn btn-secondary" data-resource-id="{{ resource.id }}" onclick="showResourceDetails(this)">
+                        {{ resource.name }} {{ resource.surname }}
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Modale per l'inserimento dei dati -->
+    <div class="modal fade" id="newEngagementModal" tabindex="-1" role="dialog" aria-labelledby="newEngagementModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newEngagementModalLabel">Inserisci dati per il nuovo Engagement</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Form per l'inserimento dei dati -->
+                    <form method="post" action="{% url 'new_engagement' %}" onsubmit="return showEngagementDetails()">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="engagementID">EngagementID</label>
+                            <input type="text" class="form-control" id="engagementID" name="engagementID" placeholder="Inserisci EngagementID">
+                        </div>
+                        <div class="form-group">
+                            <label for="engagementName">Engagement Name</label>
+                            <input type="text" class="form-control" id="engagementName" name="engagementName" placeholder="Inserisci il nome dell'Engagement">
+                        </div>
+                        <div class="form-group">
+                            <label for="budget">Budget</label>
+                            <input type="text" class="form-control" id="budget" name="budget" placeholder="Inserisci il Budget">
+                        </div>
+                        <div class="form-group">
+                            <label for="owner">Owner</label>
+                            <input type="text" class="form-control" id="owner" name="owner" placeholder="Inserisci l'Owner">
+                        </div>
+                        <div class="form-group">
+                            <label for="client">Client</label>
+                            <input type="text" class="form-control" id="client" name="client" placeholder="Inserisci il Client">
+                        </div>
+                        <div class="form-group">
+                            <label for="startingDate">Starting Date</label>
+                            <input type="date" class="form-control" id="startingDate" name="startingDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="dueDate">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate" name="dueDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="note">Note</label>
+                            <textarea class="form-control" id="note" name="note" rows="3" placeholder="Inserisci eventuali note"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Back</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modale per l'inserimento di un nuovo Resource -->
+    <div class="modal fade" id="newResourceModal" tabindex="-1" role="dialog" aria-labelledby="newResourceModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newResourceModalLabel">New Resource</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Form per l'inserimento dei dati del nuovo Resource -->
+                    <form method="post" action="{% url 'new_resource' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" placeholder="Enter Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="surname">Surname</label>
+                            <input type="text" class="form-control" id="surname" name="surname" placeholder="Enter Surname">
+                        </div>
+                        <div class="form-group">
+                            <label for="resourceLevel">Resource Level</label>
+                            <input type="text" class="form-control" id="resourceLevel" name="resourceLevel" placeholder="Enter Resource Level">
+                        </div>
+                        <div class="form-group">
+                            <label for="note">Note</label>
+                            <textarea class="form-control" id="note" name="note" rows="3" placeholder="Enter Note"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Visualizzazione dei dettagli dell'engagement -->
+    <div class="d-flex justify-content-center align-items-center" style="height: 80vh;">
+        <div id="engagementDetailsBody"></div>
+    <!-- Visualizzazione dei dettagli del resource -->
+    <div class="d-flex justify-content-center align-items-center" style="height: 80vh;">
+        <div id="resourceDetailsBody"></div>
+</body>
+</html>
